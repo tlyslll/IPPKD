@@ -6,12 +6,8 @@ from utils.parser import get_args
 from torch.nn import Parameter
 
 from models.vgg import vgg_16_bn
-from models.resnet_cifar10 import resnet_56, resnet_110
-from models.googlenet import googlenet, Inception
-from models.densenet import densenet_40
-from models.mobilenetv1 import mobilenet_v1
-from models.mobilenetv2 import mobilenet_v2
-from models.minimalistnet import minimalistnet
+from models.resnet_cifar10 import resnet_56
+
 import os
 from utils.arch_modif import prune_layer
 from utils.model_loading import load
