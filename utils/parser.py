@@ -112,7 +112,7 @@ def get_args(args=sys.argv[1:]):
         '--arch',
         type=str,
         default='vgg_16_bn',
-        choices=('vgg_16_bn','resnet_32', 'resnet_56', 'resnet_110', 'densenet_40', 'googlenet', 'resnet_50'),
+        choices=('vgg_16_bn','resnet_32', 'resnet_56', 'resnet_50'),
         help='The architecture of the model')
 
     parser.add_argument(
@@ -161,16 +161,12 @@ def get_args(args=sys.argv[1:]):
         type=bool,
         help='Whether to use the kd in finetuning'
     )
-    # parser.add_argument(
-    #     '--use_self_prompt',
-    #     default=False,
-    #     type=bool,
-    #     help='Whether to use the self-prompt block in finetuning')
+
     parser.add_argument(
         '--KD_mode',
         default="No_self_prompt",
         type=str,
-        choices=["self_prompt","MGD","KD","Logit_Stand_KD","No_self_prompt","CAT-KD","DKD","MGD+PKD"],
+        choices=["self_prompt","MGD","KD","Logit_Stand_KD","No_self_prompt","CAT-KD","DKD","MGD+PKD"], #self_prompt is PKD
         help='Whether to use the self-prompt block in finetuning')
     parser.add_argument(
         '--teacher_model_path',
