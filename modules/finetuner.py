@@ -1,7 +1,5 @@
 import os
 import time
-#import matplotlib
-#matplotlib.use("agg")
 import matplotlib.pyplot as plt
 
 import torch
@@ -9,10 +7,8 @@ import torch.nn as nn
 import numpy as np
 
 from models.vgg import vgg_16_bn
-from models.resnet_cifar10 import resnet_56, resnet_110,resnet_32
+from models.resnet_cifar10 import resnet_56,resnet_32
 from models.resnet_imgnet import resnet_50
-from models.googlenet import googlenet
-from models.densenet import densenet_40
 from collections import OrderedDict
 from dataset.dataset_loader import load_data
 import utils.common as utils
@@ -68,10 +64,8 @@ class Finetuner:
                 self.teacher_model=resnet_56().cuda()
             elif self.args.arch=="resnet_50":
                 self.teacher_model=resnet_50().cuda()
-            elif self.args.arch=="densenet_40":
-                self.teacher_model=densenet_40().cuda()
             load_model(self.teacher_path,self.teacher_model,self.args.arch)
-            if self.args.KD_mode=="self_prompt":
+            if self.args.KD_mode=="PKD":
                 if "resnet" in self.args.arch:
                     #self_prompt_block_1
                     self.prompt_s1=nn.Parameter(torch.randn((64,8,8)),requires_grad=True).cuda()
@@ -94,26 +88,6 @@ class Finetuner:
                                                          nn.ReLU(),
                                                          nn.Conv2d(64,64,3,1,1)).cuda()
                 elif self.args.arch=="vgg_16_bn":
-                    # self_prompt_block_1
-                    # self.prompt_s1 = nn.Parameter(torch.randn((339, 2, 2)), requires_grad=True).cuda()
-                    # self.prompt_c1 = nn.Parameter(torch.randn((339, 1, 1)), requires_grad=True).cuda()
-                    # self.prompt_projection1 = nn.Sequential(nn.Conv2d(339, 339, 3, 1, 1),
-                    #                                         nn.ReLU(),
-                    #                                         nn.Conv2d(339, 339, 3, 1, 1)).cuda()
-                    #
-                    # # self_prompt_block_2
-                    # self.prompt_s2 = nn.Parameter(torch.randn((339, 2, 2)), requires_grad=True).cuda()
-                    # self.prompt_c2 = nn.Parameter(torch.randn((339, 1, 1)), requires_grad=True).cuda()
-                    # self.prompt_projection2 = nn.Sequential(nn.Conv2d(339, 339, 3, 1, 1),
-                    #                                         nn.ReLU(),
-                    #                                         nn.Conv2d(339, 339, 3, 1, 1)).cuda()
-                    #
-                    # # self_prompt_block_3
-                    # self.prompt_s3 = nn.Parameter(torch.randn((339, 2, 2)), requires_grad=True).cuda()
-                    # self.prompt_c3 = nn.Parameter(torch.randn((339, 1, 1)), requires_grad=True).cuda()
-                    # self.prompt_projection3 = nn.Sequential(nn.Conv2d(339, 339, 3, 1, 1),
-                    #                                         nn.ReLU(),
-                    #                                         nn.Conv2d(339, 339, 3, 1, 1)).cuda()
                     self.prompt_s1 = nn.Parameter(torch.randn((339, 2, 2)), requires_grad=True).cuda()
                     self.prompt_c1 = nn.Parameter(torch.randn((339 ,1, 1)), requires_grad=True).cuda()
                     self.prompt_projection1 = nn.Sequential(nn.Conv2d(339, 339, 3, 1, 1),
@@ -133,27 +107,7 @@ class Finetuner:
                     self.prompt_projection3 = nn.Sequential(nn.Conv2d(339, 339, 3, 1, 1),
                                                             nn.ReLU(),
                                                             nn.Conv2d(339, 339, 3, 1, 1)).cuda()
-                elif self.args.arch=="densenet_40":
-                    # self_prompt_block_1
-                    self.prompt_s1 = nn.Parameter(torch.randn((359, 8, 8)), requires_grad=True).cuda()
-                    self.prompt_c1 = nn.Parameter(torch.randn((359, 1, 1)), requires_grad=True).cuda()
-                    self.prompt_projection1 = nn.Sequential(nn.Conv2d(359, 359, 3, 1, 1),
-                                                            nn.ReLU(),
-                                                            nn.Conv2d(359, 359, 3, 1, 1)).cuda()
-
-                    # self_prompt_block_2
-                    self.prompt_s2 = nn.Parameter(torch.randn((359, 8, 8)), requires_grad=True).cuda()
-                    self.prompt_c2 = nn.Parameter(torch.randn((359, 1, 1)), requires_grad=True).cuda()
-                    self.prompt_projection2 = nn.Sequential(nn.Conv2d(359, 359, 3, 1, 1),
-                                                            nn.ReLU(),
-                                                            nn.Conv2d(359, 359, 3, 1, 1)).cuda()
-
-                    # self_prompt_block_3
-                    self.prompt_s3 = nn.Parameter(torch.randn((359, 8, 8)), requires_grad=True).cuda()
-                    self.prompt_c3 = nn.Parameter(torch.randn((359, 1, 1)), requires_grad=True).cuda()
-                    self.prompt_projection3 = nn.Sequential(nn.Conv2d(359, 359, 3, 1, 1),
-                                                            nn.ReLU(),
-                                                            nn.Conv2d(359, 359, 3, 1, 1)).cuda()
+               
             elif self.args.KD_mode=="MGD":
                 if self.args.arch=="vgg_16_bn":
                     self.algin=nn.Conv2d(in_channels=339,out_channels=339,kernel_size=1,stride=1).cuda()
@@ -414,15 +368,6 @@ class Finetuner:
         
         cnt = 0
         init_lamb = []
-        #逐层遍历,决定是否剪枝
-        # for name, module in self.model.named_modules():
-        #     if isinstance(module, L0Conv2d):
-        #         if cnt in layers_to_prune:
-        #             print(f'Add layer: {name}')
-        #             # compute init lambda with norm
-        #             norm = self.compute_norm(name, norm_type='none')
-        #             init_lamb.append(torch.tensor(norm, dtype=torch.float32))
-        #         cnt += 1
 
         for name, module in self.model.named_modules():
             if isinstance(module, nn.Conv2d):
@@ -474,7 +419,7 @@ class Finetuner:
     def finetune(self):
         epochs = self.args.epoch_finetuning
         if self.args.KD_mode is not None:
-            if self.args.KD_mode=="self_prompt":
+            if self.args.KD_mode=="PKD":
                 optimizer = torch.optim.SGD(list(self.model.parameters())+list(self.prompt_projection1.parameters())+list(self.prompt_projection2.parameters())+list(self.prompt_projection3.parameters()), lr=self.args.lr_finetuning, momentum=self.args.momentum,
                                             weight_decay=self.args.wd, nesterov=self.args.nesterov)
             elif self.args.KD_mode=="MGD":
