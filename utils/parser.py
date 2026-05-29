@@ -166,7 +166,7 @@ def get_args(args=sys.argv[1:]):
         '--KD_mode',
         default="No_self_prompt",
         type=str,
-        choices=["self_prompt","MGD","KD","Logit_Stand_KD","No_self_prompt","CAT-KD","DKD","MGD+PKD"], #self_prompt is PKD
+        choices=["PKD","MGD","KD","Logit_Stand_KD","No_PKD","CAT-KD","DKD","MGD+PKD"],
         help='Whether to use the self-prompt block in finetuning')
     parser.add_argument(
         '--teacher_model_path',
